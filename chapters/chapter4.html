@@ -202,19 +202,20 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">Code</span></p>
+  <p class="caption" role="heading"><span class="caption-text">Code implementation</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="chapter1.html">Start coding</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter2.html">Prepare the simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter1.html">Start Coding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter2.html">Setting Up the Simulation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="chapter3.html">Initialize the simulation</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Minimize the energy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="chapter5.html">Output the simulation state</a></li>
 <li class="toctree-l1"><a class="reference internal" href="chapter6.html">Monte Carlo move</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter7.html">Pressure measurement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter7.html">Pressure Measurement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter8.html">Monte Carlo insert</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Illustration</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../projects/project1.html">A Monte Carlo study of argon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../projects/project1.html">A Monte Carlo Study of Argon</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Extra content</span></p>
 <ul>
@@ -260,202 +261,204 @@
         </div>
         <article role="main" id="furo-main-content">
           <section id="minimize-the-energy">
-<h1>Minimize the energy<a class="headerlink" href="#minimize-the-energy" title="Link to this heading">¶</a></h1>
+<span id="chapter4-label"></span><h1>Minimize the energy<a class="headerlink" href="#minimize-the-energy" title="Link to this heading">¶</a></h1>
+<figure class="align-right">
+<a class="only-dark reference internal image-reference" href="../_images/avatar-dm.webp"><img alt="The fluid made of argon atoms during energy minimization with Python." class="only-dark" src="../_images/avatar-dm.webp" style="height: 200px;" />
+</a>
+</figure>
+<figure class="align-right">
+<a class="only-light reference internal image-reference" href="../_images/avatar.webp"><img alt="The fluid made of argon atoms during energy minimization with Python/" class="only-light" src="../_images/avatar.webp" style="height: 200px;" />
+</a>
+</figure>
 <p>Now that the code for placing the atoms within the box has been written,
-let us perform an energy minimization to ensure that there is no overlapping
-between the atoms, before starting the actual simulation.</p>
+let us proceed to write the code for performing energy minimization of the
+system. This step helps ensure that there is no unreasonable overlapping
+between the atoms.</p>
+<p>The steepest descent method is used for energy minimization, following these steps:</p>
+<ul>
+<li><ol class="arabic simple">
+<li><p>Start with an initial configuration and measure the initial potential energy,
+<span class="math notranslate nohighlight">\(E_\text{pot}^\text{initial}\)</span>.</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>Calculate the gradient of the potential energy with respect to atomic positions
+to determine the direction of the steepest ascent in energy. The magnitude
+of this gradient is used to compute the maximum force acting on the atoms.
+This maximum force indicates the direction in which the energy decreases most
+rapidly.</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>Move the atoms in the opposite direction of the maximum
+force to minimize the potential energy by a displacement step.
+The size of the step is adjusted iteratively based on the reduction in energy.</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="4">
+<li><p>Compute the new potential energy after the displacement,
+<span class="math notranslate nohighlight">\(E_\text{pot}^\text{trial}\)</span>.</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="5">
+<li><p>Evaluate the change in energy:
+<span class="math notranslate nohighlight">\(\Delta E = E_\text{pot}^\text{trial} - E_\text{pot}^\text{initial}\)</span>.</p></li>
+</ol>
+<ul class="simple">
+<li><p>If <span class="math notranslate nohighlight">\(\Delta E &lt; 0\)</span>, the new configuration is accepted as it results in
+lower energy, and the step size is increased.</p></li>
+<li><p>If <span class="math notranslate nohighlight">\(\Delta E \geq 0\)</span>, the new configuration is rejected, and the step
+size is decreased.</p></li>
+</ul>
+</li>
+</ul>
+<p>The process is repeated until the maximum number of steps is reached.
+The goal is to iteratively reduce the potential energy and reach a stable,
+minimized energy state.</p>
 <section id="prepare-the-minimization">
 <h2>Prepare the minimization<a class="headerlink" href="#prepare-the-minimization" title="Link to this heading">¶</a></h2>
-<p>Let us start by importing NumPy and the copy libraries. Add the following
-to the beginning of the <em>MinimizeEnergy.py</em> file:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">copy</span>
-</pre></div>
-</div>
-<p>Then, let us fill the <em>__init__()</em> method:</p>
+<p>Let us fill the <em>__init__()</em> method:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MinimizeEnergy</span><span class="p">(</span><span class="n">Measurements</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">maximum_steps</span><span class="p">,</span>
-                <span class="n">cut_off</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
-                <span class="n">neighbor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                <span class="n">displacement</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
-                <span class="n">thermo_outputs</span><span class="o">=</span><span class="s2">&quot;MaxF&quot;</span><span class="p">,</span>
-                <span class="n">data_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="o">*</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">neighbor</span> <span class="o">=</span> <span class="n">neighbor</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cut_off</span> <span class="o">=</span> <span class="n">cut_off</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">displacement</span> <span class="o">=</span> <span class="n">displacement</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maximum_steps</span> <span class="o">=</span> <span class="n">maximum_steps</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">thermo_outputs</span> <span class="o">=</span> <span class="n">thermo_outputs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data_folder</span> <span class="o">=</span> <span class="n">data_folder</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_folder</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-                <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_folder</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>An important parameter is <em>maximum_steps</em>, which sets the maximum number of
-steps that the energy minimization will last. A <em>cut_off</em> with a default value
-of 9 Ångströms is also defined. The <em>neighbor</em> parameter sets the period
-between two recalculations of the neighbor lists, and the <em>displacement</em> with
-a default value of 0.01 Ångström sets the initial value for atom displacement.</p>
-</section>
-<section id="nondimensionalize-units">
-<h2>Nondimensionalize units<a class="headerlink" href="#nondimensionalize-units" title="Link to this heading">¶</a></h2>
-<p>Two parameters from the <em>MinimizeEnergy</em> class must be nondimensionalized,
-namely <em>cut_off</em> and <em>displacement</em>. Add the following method to the
-<em>MinimizeEnergy</em> class:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">nondimensionalize_units_2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Use LJ prefactors to convert units into non-dimensional.&quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">cut_off</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cut_off</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_distance</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">displacement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">displacement</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_distance</span>
-</pre></div>
-</div>
-<p>Finally, let us call the <em>nondimensionalize_units_2()</em> method from the <em>__init__()</em>
-method:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-    <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">nondimensionalize_units_2</span><span class="p">()</span>
-</pre></div>
-</div>
+<p>The parameter <em>maximum_steps</em> sets the maximum number
+of steps for the energy minimization process.</p>
 </section>
 <section id="energy-minimizer">
 <h2>Energy minimizer<a class="headerlink" href="#energy-minimizer" title="Link to this heading">¶</a></h2>
-<p>Here, the steepest descent method is used. First, the initial energy of the
-system and the maximum force are measured. Then, a set of new positions for the atoms
-is tested. The energy of the new configuration is compared to the initial
-energy, and the new position is either accepted or rejected based on energy criteria.</p>
+<p>Let us implement the energy minimized described at the top of this page. Add the
+following <em>run()</em> method to the <em>MinimizeEnergy</em> class:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">displacement</span> <span class="o">=</span> <span class="mf">0.01</span> <span class="c1"># pick a random initial displacement (dimentionless)</span>
+    <span class="c1"># *step* loops for 0 to *maximum_steps*+1</span>
     <span class="k">for</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum_steps</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
-        <span class="c1"># Measure the initial energy and max force</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">update_neighbor_lists</span><span class="p">()</span>
-        <span class="k">try</span><span class="p">:</span> <span class="c1"># try using the last saved Epot, if it exists</span>
-            <span class="n">init_Epot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Epot</span>
-            <span class="n">init_MaxF</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MaxF</span>
-        <span class="k">except</span><span class="p">:</span> <span class="c1"># If self.Epot does not exists yet, calculate it</span>
-            <span class="n">init_Epot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_potential</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;potential&quot;</span><span class="p">)</span>
-            <span class="n">forces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_potential</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;force-vector&quot;</span><span class="p">)</span>
-            <span class="n">init_MaxF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">forces</span><span class="p">))</span>
+        <span class="c1"># First, meevaluate the initial energy and max force</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_neighbor_lists</span><span class="p">()</span> <span class="c1"># Rebuild neighbor list, if necessary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_cross_coefficients</span><span class="p">()</span> <span class="c1"># Recalculate the cross coefficients, if necessary</span>
+        <span class="c1"># Compute Epot/MaxF/force</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;Epot&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span> <span class="c1"># If self.Epot does not exists yet, calculate it</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Epot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_potential</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;MaxF&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span> <span class="c1"># If self.MaxF does not exists yet, calculate it</span>
+            <span class="n">forces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_force</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">MaxF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">forces</span><span class="p">))</span>
+        <span class="n">init_Epot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Epot</span>
+        <span class="n">init_MaxF</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MaxF</span>
+        <span class="c1"># Save the current atom positions</span>
         <span class="n">init_positions</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">)</span>
-        <span class="c1"># Test a new sets of positions</span>
+        <span class="c1"># Move the atoms in the opposite direction of the maximum force</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span> \
             <span class="o">+</span> <span class="n">forces</span><span class="o">/</span><span class="n">init_MaxF</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">displacement</span>
-        <span class="n">trial_Epot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_potential</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;potential&quot;</span><span class="p">)</span>
-        <span class="n">forces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_potential</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;force-vector&quot;</span><span class="p">)</span>
-        <span class="n">trial_MaxF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">forces</span><span class="p">))</span>
+        <span class="c1"># Recalculate the energy</span>
+        <span class="n">trial_Epot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_potential</span><span class="p">()</span>
         <span class="c1"># Keep the more favorable energy</span>
-        <span class="k">if</span> <span class="n">trial_Epot</span> <span class="o">&lt;</span> <span class="n">init_Epot</span><span class="p">:</span>  <span class="c1"># accept new position</span>
+        <span class="k">if</span> <span class="n">trial_Epot</span> <span class="o">&lt;</span> <span class="n">init_Epot</span><span class="p">:</span> <span class="c1"># accept new position</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">Epot</span> <span class="o">=</span> <span class="n">trial_Epot</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">MaxF</span> <span class="o">=</span> <span class="n">trial_MaxF</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">wrap_in_box</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">displacement</span> <span class="o">*=</span> <span class="mf">1.2</span>
-        <span class="k">else</span><span class="p">:</span>  <span class="c1"># reject new position</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">Epot</span> <span class="o">=</span> <span class="n">init_Epot</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">MaxF</span> <span class="o">=</span> <span class="n">init_MaxF</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span> <span class="o">=</span> <span class="n">init_positions</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">displacement</span> <span class="o">*=</span> <span class="mf">0.2</span>
+            <span class="n">forces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_force</span><span class="p">()</span> <span class="c1"># calculate the new max force and save it</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">MaxF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">forces</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wrap_in_box</span><span class="p">()</span>  <span class="c1"># Wrap atoms in the box</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">displacement</span> <span class="o">*=</span> <span class="mf">1.2</span> <span class="c1"># Multiply the displacement by a factor 1.2</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># reject new position</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Epot</span> <span class="o">=</span> <span class="n">init_Epot</span> <span class="c1"># Revert to old energy</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span> <span class="o">=</span> <span class="n">init_positions</span> <span class="c1"># Revert to old positions</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">displacement</span> <span class="o">*=</span> <span class="mf">0.2</span> <span class="c1"># Multiply the displacement by a factor 0.2</span>
 </pre></div>
 </div>
-<p>The displacement, which has an initial value of 0.01, is adjusted through energy
-minimization. When the trial is successful, its value is multiplied by 1.2. When
-the trial is rejected, its value is multiplied by 0.2.</p>
+<p>The displacement, which has an initial value of 0.01, is adjusted through
+energy minimization. When the trial is successful, its value is multiplied
+by 1.2. When the trial is rejected, its value is multiplied by 0.2. Thus,
+as the minimization progresses, the displacements that the particles
+perform increase.</p>
 </section>
-<section id="build-neighbor-lists">
-<h2>Build neighbor lists<a class="headerlink" href="#build-neighbor-lists" title="Link to this heading">¶</a></h2>
-<p>To save time, it is common in molecular simulations to detect which atoms are
-neighbors. This way, only interactions between neighbors are recalculated.
-This is the purpose of the <em>update_neighbor_lists()</em> method that must be
-added to the <em>Utilities</em> class:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">update_neighbor_lists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighbor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
-        <span class="n">matrix</span> <span class="o">=</span> <span class="n">distances</span><span class="o">.</span><span class="n">contact_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">,</span>
-            <span class="n">cutoff</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cut_off</span><span class="p">,</span> <span class="c1">#+2,</span>
-            <span class="n">returntype</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">,</span>
-            <span class="n">box</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">box_size</span><span class="p">)</span>
-        <span class="n">neighbor_lists</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">cpt</span><span class="p">,</span> <span class="n">array</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">matrix</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
-            <span class="nb">list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">array</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-            <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="n">ele</span> <span class="k">for</span> <span class="n">ele</span> <span class="ow">in</span> <span class="nb">list</span> <span class="k">if</span> <span class="n">ele</span> <span class="o">&gt;</span> <span class="n">cpt</span><span class="p">]</span>
-            <span class="n">neighbor_lists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">neighbor_lists</span> <span class="o">=</span> <span class="n">neighbor_lists</span>
-        <span class="c1"># Precalculte LJ cross-coefficients</span>
-        <span class="n">sigma_ij_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">epsilon_ij_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">Ni</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_number_atoms</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span> <span class="c1"># tofix error for GCMC</span>
-            <span class="c1"># Read information about atom i</span>
-            <span class="n">sigma_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms_sigma</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
-            <span class="n">epsilon_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms_epsilon</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
-            <span class="n">neighbor_of_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighbor_lists</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
-            <span class="c1"># Read information about neighbors j</span>
-            <span class="n">sigma_j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms_sigma</span><span class="p">[</span><span class="n">neighbor_of_i</span><span class="p">]</span>
-            <span class="n">epsilon_j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms_epsilon</span><span class="p">[</span><span class="n">neighbor_of_i</span><span class="p">]</span>
-            <span class="c1"># Calculare cross parameters</span>
-            <span class="n">sigma_ij_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">sigma_i</span><span class="o">+</span><span class="n">sigma_j</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
-            <span class="n">epsilon_ij_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">epsilon_i</span><span class="o">+</span><span class="n">epsilon_j</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_ij_list</span> <span class="o">=</span> <span class="n">sigma_ij_list</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon_ij_list</span> <span class="o">=</span> <span class="n">epsilon_ij_list</span>
-</pre></div>
-</div>
-<p>The <em>update_neighbor_lists()</em> method generates neighbor lists that are stored
-as Python list named <em>neighbor_lists</em>. The following library
-should also be imported within the <em>Utilities.py</em> file:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
-<span class="kn">from</span> <span class="nn">MDAnalysis.analysis</span> <span class="kn">import</span> <span class="n">distances</span>
-</pre></div>
-</div>
-</section>
-<section id="compute-potential">
-<h2>Compute_potential<a class="headerlink" href="#compute-potential" title="Link to this heading">¶</a></h2>
-<p>Computing the potential energy of the system is central to the energy minimizer,
-as the value of the potential is used to decide if the trial is accepted or
-rejected. Add the following method called <em>compute_potential()</em>  to the <em>Utilities</em>
-class.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_potential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">output</span> <span class="o">==</span> <span class="s2">&quot;force-vector&quot;</span><span class="p">:</span>
-        <span class="n">forces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">total_number_atoms</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
-    <span class="k">elif</span> <span class="n">output</span> <span class="o">==</span> <span class="s2">&quot;force-matrix&quot;</span><span class="p">:</span>
-        <span class="n">forces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">total_number_atoms</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">total_number_atoms</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<section id="compute-the-potential">
+<h2>Compute the Potential<a class="headerlink" href="#compute-the-potential" title="Link to this heading">¶</a></h2>
+<p>Computing the potential energy of the system is central to the energy
+minimizer, as the value of the potential is used to decide if the trial is
+accepted or rejected. Add the following method called <em>compute_potential()</em>
+to the <em>Utilities</em> class:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_potential</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the potential energy by summing up all pair contributions.&quot;&quot;&quot;</span>
     <span class="n">energy_potential</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">box_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">box_size</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
-    <span class="n">half_box_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">box_size</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mf">2.0</span>
-    <span class="k">for</span> <span class="n">Ni</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_number_atoms</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="c1"># Read information about atom i</span>
-        <span class="n">position_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">Ni</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_atoms</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># Read neighbor list</span>
         <span class="n">neighbor_of_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighbor_lists</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
-        <span class="c1"># Read information about neighbors j and cross coefficient</span>
-        <span class="n">positions_j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">[</span><span class="n">neighbor_of_i</span><span class="p">]</span>
+        <span class="c1"># Measure distance</span>
+        <span class="n">rij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_distance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">[</span><span class="n">Ni</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">[</span><span class="n">neighbor_of_i</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">box_size</span><span class="p">)</span>
+        <span class="c1"># Measure potential using pre-calculated cross coefficients</span>
         <span class="n">sigma_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_ij_list</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
         <span class="n">epsilon_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon_ij_list</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
-        <span class="c1"># Measure distances</span>
-        <span class="n">rij_xyz</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">remainder</span><span class="p">(</span><span class="n">position_i</span> <span class="o">-</span> <span class="n">positions_j</span> <span class="o">+</span> <span class="n">half_box_size</span><span class="p">,</span> <span class="n">box_size</span><span class="p">)</span> <span class="o">-</span> <span class="n">half_box_size</span><span class="p">)</span>
-        <span class="n">rij</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rij_xyz</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="c1"># Measure potential</span>
-        <span class="k">if</span> <span class="n">output</span> <span class="o">==</span> <span class="s2">&quot;potential&quot;</span><span class="p">:</span>
-            <span class="n">energy_potential</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">LJ_potential</span><span class="p">(</span><span class="n">epsilon_ij</span><span class="p">,</span> <span class="n">sigma_ij</span><span class="p">,</span> <span class="n">rij</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">derivative_potential</span> <span class="o">=</span> <span class="n">LJ_potential</span><span class="p">(</span><span class="n">epsilon_ij</span><span class="p">,</span> <span class="n">sigma_ij</span><span class="p">,</span> <span class="n">rij</span><span class="p">,</span> <span class="n">derivative</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">output</span> <span class="o">==</span> <span class="s2">&quot;force-vector&quot;</span><span class="p">:</span>
-                <span class="n">forces</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">derivative_potential</span><span class="o">*</span><span class="n">rij_xyz</span><span class="o">.</span><span class="n">T</span><span class="o">/</span><span class="n">rij</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-                <span class="n">forces</span><span class="p">[</span><span class="n">neighbor_of_i</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="n">derivative_potential</span><span class="o">*</span><span class="n">rij_xyz</span><span class="o">.</span><span class="n">T</span><span class="o">/</span><span class="n">rij</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">elif</span> <span class="n">output</span> <span class="o">==</span> <span class="s2">&quot;force-matrix&quot;</span><span class="p">:</span>
-                <span class="n">forces</span><span class="p">[</span><span class="n">Ni</span><span class="p">][</span><span class="n">neighbor_of_i</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">derivative_potential</span><span class="o">*</span><span class="n">rij_xyz</span><span class="o">.</span><span class="n">T</span><span class="o">/</span><span class="n">rij</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
-    <span class="k">if</span> <span class="n">output</span><span class="o">==</span><span class="s2">&quot;potential&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">energy_potential</span>
-    <span class="k">elif</span> <span class="p">(</span><span class="n">output</span> <span class="o">==</span> <span class="s2">&quot;force-vector&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">output</span> <span class="o">==</span> <span class="s2">&quot;force-matrix&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">forces</span>
+        <span class="n">energy_potential</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">potentials</span><span class="p">(</span><span class="n">epsilon_ij</span><span class="p">,</span> <span class="n">sigma_ij</span><span class="p">,</span> <span class="n">rij</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">energy_potential</span>
 </pre></div>
 </div>
+<p>Measuring the distance is a central step in computing the potential. Let us
+do this using a dedicated method. Add the following method to the <em>Utilities</em>
+class as well:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">position_i</span><span class="p">,</span> <span class="n">positions_j</span><span class="p">,</span> <span class="n">box_size</span><span class="p">,</span> <span class="n">only_norm</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Measure the distances between two particles.</span>
+<span class="sd">    # TOFIX: Move as a function instead of a method?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rij_xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">remainder</span><span class="p">(</span><span class="n">position_i</span> <span class="o">-</span> <span class="n">positions_j</span>
+              <span class="o">+</span> <span class="n">box_size</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">box_size</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span> <span class="o">-</span> <span class="n">box_size</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">only_norm</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rij_xyz</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rij_xyz</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">rij_xyz</span>
+</pre></div>
+</div>
+<p>Finally, the energy minimization requires the computation of the minimum
+force in the system. Although not very different from the potential measurement,
+let us create a new method that is dedicated solely to measuring forces.
+The force can be returned as a vector (default), or as a matrix (which will be
+useful for pressure calculation, see the <a class="reference internal" href="chapter7.html#chapter7-label"><span class="std std-ref">Pressure Measurement</span></a> chapter):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_force</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">return_vector</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">return_vector</span><span class="p">:</span> <span class="c1"># return a N-size vector</span>
+        <span class="n">force_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_atoms</span><span class="p">),</span><span class="mi">3</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1"># return a N x N matrix</span>
+        <span class="n">force_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_atoms</span><span class="p">),</span>
+                                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_atoms</span><span class="p">),</span><span class="mi">3</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">Ni</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_atoms</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># Read neighbor list</span>
+        <span class="n">neighbor_of_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighbor_lists</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
+        <span class="c1"># Measure distance</span>
+        <span class="n">rij</span><span class="p">,</span> <span class="n">rij_xyz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_distance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">[</span><span class="n">Ni</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">[</span><span class="n">neighbor_of_i</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">box_size</span><span class="p">,</span> <span class="n">only_norm</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># Measure force using information about cross coefficients</span>
+        <span class="n">sigma_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_ij_list</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
+        <span class="n">epsilon_ij</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon_ij_list</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span>
+        <span class="n">fij_xyz</span> <span class="o">=</span> <span class="n">potentials</span><span class="p">(</span><span class="n">epsilon_ij</span><span class="p">,</span> <span class="n">sigma_ij</span><span class="p">,</span> <span class="n">rij</span><span class="p">,</span> <span class="n">derivative</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_vector</span><span class="p">:</span>
+            <span class="c1"># Add the contribution to both Ni and its neighbors</span>
+            <span class="n">force_vector</span><span class="p">[</span><span class="n">Ni</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">fij_xyz</span><span class="o">*</span><span class="n">rij_xyz</span><span class="o">.</span><span class="n">T</span><span class="o">/</span><span class="n">rij</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">force_vector</span><span class="p">[</span><span class="n">neighbor_of_i</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="n">fij_xyz</span><span class="o">*</span><span class="n">rij_xyz</span><span class="o">.</span><span class="n">T</span><span class="o">/</span><span class="n">rij</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Add the contribution to the matrix</span>
+            <span class="n">force_matrix</span><span class="p">[</span><span class="n">Ni</span><span class="p">][</span><span class="n">neighbor_of_i</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">fij_xyz</span><span class="o">*</span><span class="n">rij_xyz</span><span class="o">.</span><span class="n">T</span><span class="o">/</span><span class="n">rij</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">if</span> <span class="n">return_vector</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">force_vector</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">force_matrix</span>
+</pre></div>
+</div>
+<p>The force can be returned as a vector (default) or as a matrix. The latter
+will be useful for pressure calculation; see the <a class="reference internal" href="chapter7.html#chapter7-label"><span class="std std-ref">Pressure Measurement</span></a> chapter.</p>
 </section>
 <section id="wrap-in-box">
-<h2>Wrap in box<a class="headerlink" href="#wrap-in-box" title="Link to this heading">¶</a></h2>
-<p>Every time atoms are being displaced, one has to ensure that they remain in
-the box. This is done by the <em>wrap_in_box()</em> method that must be placed
+<h2>Wrap in Box<a class="headerlink" href="#wrap-in-box" title="Link to this heading">¶</a></h2>
+<p>Every time atoms are displaced, one has to ensure that they remain within
+the box. This is done by the <em>wrap_in_box()</em> method, which must be placed
 within the <em>Utilities</em> class:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">wrap_in_box</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
         <span class="n">out_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">[:,</span> <span class="n">dim</span><span class="p">]</span> \
             <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">box_boundaries</span><span class="p">[</span><span class="n">dim</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">atoms_positions</span><span class="p">[:,</span> <span class="n">dim</span><span class="p">][</span><span class="n">out_ids</span><span class="p">]</span> \
@@ -473,19 +476,53 @@ within the <em>Utilities</em> class:</p>
 is expected, i.e. that it leads to a potential energy that is small, and
 typically negative.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">MinimizeEnergy</span> <span class="kn">import</span> <span class="n">MinimizeEnergy</span>
+<span class="kn">from</span> <span class="nn">pint</span> <span class="kn">import</span> <span class="n">UnitRegistry</span>
+<span class="n">ureg</span> <span class="o">=</span> <span class="n">UnitRegistry</span><span class="p">()</span>
 
-<span class="nb">min</span> <span class="o">=</span> <span class="n">MinimizeEnergy</span><span class="p">(</span><span class="n">maximum_steps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-    <span class="n">number_atoms</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
-    <span class="n">epsilon</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="c1"># kcal/mol</span>
-    <span class="n">sigma</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="c1"># A</span>
-    <span class="n">atom_mass</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="c1"># g/mol</span>
-    <span class="n">box_dimensions</span><span class="o">=</span><span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span> <span class="c1"># A</span>
-    <span class="p">)</span>
-<span class="nb">min</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="c1"># Define atom number of each group</span>
+<span class="n">nmb_1</span><span class="p">,</span> <span class="n">nmb_2</span><span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="c1"># Define LJ parameters (sigma)</span>
+<span class="n">sig_1</span><span class="p">,</span> <span class="n">sig_2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">angstrom</span>
+<span class="c1"># Define LJ parameters (epsilon)</span>
+<span class="n">eps_1</span><span class="p">,</span> <span class="n">eps_2</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">]</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">kcal</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">mol</span>
+<span class="c1"># Define atom mass</span>
+<span class="n">mss_1</span><span class="p">,</span> <span class="n">mss_2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">gram</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">mol</span>
+<span class="c1"># Define box size</span>
+<span class="n">L</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">angstrom</span>
+<span class="c1"># Define a cut off</span>
+<span class="n">rc</span> <span class="o">=</span> <span class="mf">2.5</span><span class="o">*</span><span class="n">sig_1</span>
 
-<span class="k">assert</span> <span class="nb">min</span><span class="o">.</span><span class="n">compute_potential</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;potential&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span>
+<span class="c1"># Initialize the prepare object</span>
+<span class="n">minimizer</span> <span class="o">=</span> <span class="n">MinimizeEnergy</span><span class="p">(</span>
+    <span class="n">ureg</span> <span class="o">=</span> <span class="n">ureg</span><span class="p">,</span>
+    <span class="n">maximum_steps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">number_atoms</span><span class="o">=</span><span class="p">[</span><span class="n">nmb_1</span><span class="p">,</span> <span class="n">nmb_2</span><span class="p">],</span>
+    <span class="n">epsilon</span><span class="o">=</span><span class="p">[</span><span class="n">eps_1</span><span class="p">,</span> <span class="n">eps_2</span><span class="p">],</span> <span class="c1"># kcal/mol</span>
+    <span class="n">sigma</span><span class="o">=</span><span class="p">[</span><span class="n">sig_1</span><span class="p">,</span> <span class="n">sig_2</span><span class="p">],</span> <span class="c1"># A</span>
+    <span class="n">atom_mass</span><span class="o">=</span><span class="p">[</span><span class="n">mss_1</span><span class="p">,</span> <span class="n">mss_2</span><span class="p">],</span> <span class="c1"># g/mol</span>
+    <span class="n">box_dimensions</span><span class="o">=</span><span class="p">[</span><span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">],</span> <span class="c1"># A</span>
+    <span class="n">cut_off</span><span class="o">=</span><span class="n">rc</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">minimizer</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="c1"># Test function using pytest</span>
+<span class="k">def</span> <span class="nf">test_energy_and_force</span><span class="p">():</span>
+    <span class="n">Final_Epot</span> <span class="o">=</span> <span class="n">minimizer</span><span class="o">.</span><span class="n">Epot</span>
+    <span class="n">Final_MaxF</span> <span class="o">=</span> <span class="n">minimizer</span><span class="o">.</span><span class="n">MaxF</span>
+    <span class="k">assert</span> <span class="n">Final_Epot</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Test failed: Final energy too large: </span><span class="si">{</span><span class="n">Final_Epot</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">assert</span> <span class="n">Final_MaxF</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Test failed: Final max force too large: </span><span class="si">{</span><span class="n">Final_MaxF</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Test passed&quot;</span><span class="p">)</span>
+
+<span class="c1"># If the script is run directly, execute the tests</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pytest</span>
+    <span class="c1"># Run pytest programmatically</span>
+    <span class="n">pytest</span><span class="o">.</span><span class="n">main</span><span class="p">([</span><span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="vm">__file__</span><span class="p">])</span>
 </pre></div>
 </div>
+<p>For such a low particle density, we can reasonably expect that the potential
+energy will always be negative after 100 steps, and that the maximum force
+will be smaller than 10 (unitless).</p>
 </section>
 </section>
 
@@ -542,11 +579,9 @@ typically negative.</p>
             <ul>
 <li><a class="reference internal" href="#">Minimize the energy</a><ul>
 <li><a class="reference internal" href="#prepare-the-minimization">Prepare the minimization</a></li>
-<li><a class="reference internal" href="#nondimensionalize-units">Nondimensionalize units</a></li>
 <li><a class="reference internal" href="#energy-minimizer">Energy minimizer</a></li>
-<li><a class="reference internal" href="#build-neighbor-lists">Build neighbor lists</a></li>
-<li><a class="reference internal" href="#compute-potential">Compute_potential</a></li>
-<li><a class="reference internal" href="#wrap-in-box">Wrap in box</a></li>
+<li><a class="reference internal" href="#compute-the-potential">Compute the Potential</a></li>
+<li><a class="reference internal" href="#wrap-in-box">Wrap in Box</a></li>
 <li><a class="reference internal" href="#test-the-code">Test the code</a></li>
 </ul>
 </li>
@@ -563,5 +598,6 @@ typically negative.</p>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>
